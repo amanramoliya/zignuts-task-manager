@@ -6,12 +6,13 @@ import { useRouter } from "next/navigation";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useAuthStore } from "@/store/authStore";
+import type { User } from "firebase/auth";
 
 export default function HomePage() {
   const router = useRouter();
   const { setUser } = useAuthStore();
   const [loading, setLoading] = useState(true);
-  const [user, setLocalUser] = useState<any>(null);
+  const [user, setLocalUser] = useState<User | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
