@@ -16,7 +16,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ uid: user.uid, email: user.email }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 400 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: message }, { status: 400 });
   }
 }

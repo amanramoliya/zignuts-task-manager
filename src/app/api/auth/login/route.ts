@@ -9,7 +9,8 @@ export async function POST(req: Request) {
     const user = userCredential.user;
 
     return NextResponse.json({ uid: user.uid, email: user.email }, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 401 });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "An unknown error occurred";
+    return NextResponse.json({ error: message }, { status: 401 });
   }
 }
