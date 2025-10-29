@@ -5,7 +5,7 @@ export interface Task {
   title: string;
   description?: string;
   status: "todo" | "in-progress" | "done";
-  dueDate?: string | null; // ✅ Added this line
+  dueDate?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

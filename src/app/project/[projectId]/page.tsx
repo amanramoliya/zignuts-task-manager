@@ -48,7 +48,6 @@ export default function ProjectDetails() {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 Fetch tasks (UNCHANGED logic & endpoint)
   useEffect(() => {
     if (!user || !projectId) return;
     const fetchTasks = async () => {
@@ -99,7 +98,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // 🔹 Delete (UNCHANGED logic & endpoint)
   const handleDeleteTask = async (taskId: string) => {
     if (!user) return;
     const token = await user.getIdToken();
@@ -114,7 +112,6 @@ export default function ProjectDetails() {
     }
   };
 
-  // 🔹 Edit handlers (UI-only state)
   const handleEdit = (task: Task) => {
     setEditingTask(task);
     setNewTask({
@@ -123,7 +120,6 @@ export default function ProjectDetails() {
       status: task.status,
       dueDate: task.dueDate,
     });
-    // scroll to top so user sees the form on small screens
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 

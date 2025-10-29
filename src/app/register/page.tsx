@@ -19,7 +19,6 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
-  // ✅ Validation helpers
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
@@ -34,7 +33,6 @@ export default function RegisterPage() {
   const handleRegister = async () => {
     setError("");
 
-    // Validate before submit
     if (!validateEmail(email)) {
       setEmailError("Please enter a valid email address");
       return;

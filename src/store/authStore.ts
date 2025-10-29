@@ -11,7 +11,6 @@ interface AuthState {
   setLoading: (loading: boolean) => void;
 }
 
-// Zustand store
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   loading: true,
@@ -19,11 +18,10 @@ export const useAuthStore = create<AuthState>((set) => ({
   setLoading: (loading) => set({ loading }),
 }));
 
-// ✅ Initialize listener once globally
 const auth = getAuth(firebaseApp);
 
 onAuthStateChanged(auth, (user) => {
   const { setUser, setLoading } = useAuthStore.getState();
   setUser(user);
-  setLoading(false); // important: mark loading as done
+  setLoading(false);
 });
