@@ -19,10 +19,11 @@ export default function LoginPage() {
   const { setUser } = useAuthStore();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
   const [loading, setLoading] = useState(true);
   const [signingIn, setSigningIn] = useState(false);
 
-  // ✅ Keeps user logged in after refresh
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -31,13 +32,39 @@ export default function LoginPage() {
       }
       setLoading(false);
     });
-
     return () => unsubscribe();
   }, [router, setUser]);
+
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
+  const validatePassword = (password: string) => {
+    const passwordRegex =
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#^()_+\-={}[\]|\\:;"'<>,./?]).{8,}$/;
+    return passwordRegex.test(password);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setSigningIn(true);
+    setEmailError("");
+    setPasswordError("");
+
+    if (!validateEmail(email)) {
+      setEmailError("Please enter a valid email address");
+      setSigningIn(false);
+      return;
+    }
+    if (!validatePassword(password)) {
+      setPasswordError(
+        "Password must contain 8+ chars, 1 uppercase, 1 lowercase, 1 number & 1 special char"
+      );
+      setSigningIn(false);
+      return;
+    }
+
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (error: unknown) {
@@ -83,6 +110,8 @@ export default function LoginPage() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            error={!!emailError}
+            helperText={emailError}
           />
 
           <TextField
@@ -93,6 +122,8 @@ export default function LoginPage() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
+            error={!!passwordError}
+            helperText={passwordError}
           />
 
           <Button
@@ -102,7 +133,7 @@ export default function LoginPage() {
             fullWidth
             size="large"
             className="!mt-2 !py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition-all"
-            disabled={signingIn}
+            disabled={signingIn || !email.trim() || !password.trim()}
           >
             {signingIn ? (
               <CircularProgress size={24} color="inherit" />
