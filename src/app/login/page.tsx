@@ -1,11 +1,18 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { TextField, Button, Box, Typography, CircularProgress } from "@mui/material";
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  CircularProgress,
+  Paper,
+} from "@mui/material";
 import { useRouter } from "next/navigation";
 import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { useAuthStore } from "@/store/useAuthStore";
+import { useAuthStore } from "@/store/authStore";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,8 +40,8 @@ export default function LoginPage() {
     setSigningIn(true);
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // Redirect handled automatically by onAuthStateChanged
-    } catch (err: any) {
+    } catch (error: unknown) {
+      console.error(error);
       alert("Invalid email or password");
     } finally {
       setSigningIn(false);
@@ -43,64 +50,81 @@ export default function LoginPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
+      <div className="flex justify-center items-center h-screen bg-gray-50">
         <CircularProgress />
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <Box
-        component="form"
-        onSubmit={handleLogin}
-        className="bg-white p-8 rounded-2xl shadow-lg w-[90%] max-w-md"
+    <div className="flex justify-center items-center h-screen bg-gradient-to-br from-indigo-50 via-white to-indigo-100">
+      <Paper
+        elevation={6}
+        className="p-10 rounded-2xl shadow-2xl w-[90%] max-w-md backdrop-blur-sm bg-white/90"
       >
-        <Typography variant="h5" textAlign="center" mb={3}>
-          Login to Your Account
-        </Typography>
-
-        <TextField
-          label="Email"
-          variant="outlined"
-          fullWidth
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="mb-4"
-        />
-
-        <TextField
-          label="Password"
-          variant="outlined"
-          type="password"
-          fullWidth
-          required
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="mb-6"
-        />
-
-        <Button
-          type="submit"
-          variant="contained"
-          color="primary"
-          fullWidth
-          disabled={signingIn}
+        <Typography
+          variant="h4"
+          className="font-bold text-center text-indigo-700 mb-6"
         >
-          {signingIn ? <CircularProgress size={24} color="inherit" /> : "Login"}
-        </Button>
-
-        <Typography variant="body2" textAlign="center" mt={2}>
-          Don’t have an account?{" "}
-          <span
-            onClick={() => router.push("/register")}
-            className="text-blue-600 cursor-pointer hover:underline"
-          >
-            Register
-          </span>
+          Welcome Back 👋
         </Typography>
-      </Box>
+        <Typography
+          variant="body1"
+          className="text-gray-600 text-center mb-8 pb-4"
+        >
+          Sign in to continue managing your projects
+        </Typography>
+
+        <Box component="form" onSubmit={handleLogin} className="space-y-5">
+          <TextField
+            label="Email"
+            variant="outlined"
+            fullWidth
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+
+          <TextField
+            label="Password"
+            variant="outlined"
+            type="password"
+            fullWidth
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+
+          <Button
+            type="submit"
+            variant="contained"
+            color="primary"
+            fullWidth
+            size="large"
+            className="!mt-2 !py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg shadow-md transition-all"
+            disabled={signingIn}
+          >
+            {signingIn ? (
+              <CircularProgress size={24} color="inherit" />
+            ) : (
+              "Login"
+            )}
+          </Button>
+
+          <Typography
+            variant="body2"
+            className="text-center text-gray-600 mt-4"
+          >
+            Don’t have an account?{" "}
+            <span
+              onClick={() => router.push("/register")}
+              className="text-indigo-600 font-medium cursor-pointer hover:underline"
+            >
+              Register
+            </span>
+          </Typography>
+        </Box>
+      </Paper>
     </div>
   );
 }
