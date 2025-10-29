@@ -11,7 +11,11 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.4",
     "@mui/material": "^7.3.4",
+    "@mui/x-date-pickers": "8.0.0-beta.3",
+    "@mui/x-date-pickers-pro": "^8.15.0",
+    "date-fns": "^4.1.0",
     "firebase": "^12.4.0",
     "firebase-admin": "^13.5.0",
     "next": "14.2.33",
@@ -20,7 +24,7 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@types/node": "latest",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "eslint": "^8",
