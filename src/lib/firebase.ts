@@ -15,13 +15,18 @@ const firebaseConfig = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const firebaseApp = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-const auth = getAuth(app);
+const auth = getAuth(firebaseApp);
 
-// ✅ Persist login state across page reloads
-setPersistence(auth, browserLocalPersistence);
+(async () => {
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+  } catch (error) {
+    console.error("Error setting persistence:", error);
+  }
+})();
 
-const db = getFirestore(app);
+const db = getFirestore(firebaseApp);
 
-export { auth, db };
+export { firebaseApp, auth, db };
