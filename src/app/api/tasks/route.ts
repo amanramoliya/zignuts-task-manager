@@ -1,87 +1,138 @@
 import { NextResponse } from "next/server";
-import {
-  getFirestore,
-  collection,
-  addDoc,
-  getDocs,
-  doc,
-  updateDoc,
-  deleteDoc,
-  query,
-  where,
-} from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { getAuth } from "firebase-admin/auth";
-import { getApps, initializeApp, applicationDefault } from "firebase-admin/app";
-
-if (!getApps().length) {
-  initializeApp({
-    credential: applicationDefault(),
-  });
-}
+import { adminDB } from "@/lib/firebaseAdmin";
 
 export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const projectId = searchParams.get("projectId");
 
-  if (!projectId) return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
-
-  try {
-    const tasksRef = collection(db, "projects", projectId, "tasks");
-    const snapshot = await getDocs(tasksRef);
-    const tasks = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    return NextResponse.json({ tasks });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to fetch tasks" }, { status: 500 });
+  if (!projectId) {
+    return NextResponse.json({ error: "Missing projectId" }, { status: 400 });
   }
+
+  const tasksRef = adminDB.collection("projects").doc(projectId).collection("tasks");
+  const snapshot = await tasksRef.get();
+
+  const tasks = snapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+
+  return NextResponse.json(tasks);
 }
 
 export async function POST(req: Request) {
-  const { projectId, title, status, dueDate } = await req.json();
-  if (!projectId || !title) return NextResponse.json({ error: "Missing fields" }, { status: 400 });
-
   try {
-    const taskRef = collection(db, "projects", projectId, "tasks");
-    const newTask = await addDoc(taskRef, {
+
+    const { searchParams } = new URL(req.url);
+    const projectId = searchParams.get("projectId");
+    const { title, dueDate, status, description } = await req.json();
+
+    if (!projectId || !title) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const newTask = {
       title,
-      status: status || "Todo",
       dueDate: dueDate || null,
-      createdAt: new Date(),
-    });
-    return NextResponse.json({ id: newTask.id, title, status });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to create task" }, { status: 500 });
+      status: status || "ToDo",
+      createdAt: new Date().toISOString(),
+      description: description || "",
+    };
+
+    const taskRef = await adminDB
+      .collection("projects")
+      .doc(projectId)
+      .collection("tasks")
+      .add(newTask);
+
+    return NextResponse.json({ id: taskRef.id, ...newTask });
+  } catch (error) {
+    console.error("Error adding task:", error);
+    return NextResponse.json({ error: "Failed to add task" }, { status: 500 });
   }
 }
 
 export async function PUT(req: Request) {
-  const { id, projectId, ...updates } = await req.json();
-  if (!id || !projectId) return NextResponse.json({ error: "Missing id/projectId" }, { status: 400 });
-
   try {
-    const taskRef = doc(db, "projects", projectId, "tasks", id);
-    await updateDoc(taskRef, updates);
-    return NextResponse.json({ message: "Task updated" });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to update task" }, { status: 500 });
+    const { searchParams } = new URL(req.url);
+    const projectId = searchParams.get("projectId");
+    const taskId = searchParams.get("taskId");
+
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid or empty JSON body" },
+        { status: 400 }
+      );
+    }
+
+    const { title, description, status, dueDate } = body;
+
+    if (!projectId || !taskId) {
+      return NextResponse.json(
+        { error: "Missing projectId or taskId" },
+        { status: 400 }
+      );
+    }
+
+    const taskRef = adminDB
+      .collection("projects")
+      .doc(projectId)
+      .collection("tasks")
+      .doc(taskId);
+
+    const updateData: {
+      updatedAt: string;
+      title?: string;
+      description?: string;
+      status?: string;
+      dueDate?: string | null;
+    } = {
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (title) updateData.title = title;
+    if (description) updateData.description = description;
+    if (status) updateData.status = status;
+    if (dueDate !== undefined) updateData.dueDate = dueDate;
+
+    await taskRef.update(updateData);
+
+    const updatedDoc = await taskRef.get();
+    if (!updatedDoc.exists) {
+      return NextResponse.json({ error: "Task not found" }, { status: 404 });
+    }
+
+    const updatedTask = { id: updatedDoc.id, ...updatedDoc.data() };
+
+    return NextResponse.json(updatedTask, { status: 200 });
+  } catch (error) {
+    console.error("Error updating task:", error);
+    return NextResponse.json(
+      { error: "Failed to update task", details: String(error) },
+      { status: 500 }
+    );
   }
 }
 
+
 export async function DELETE(req: Request) {
   const { searchParams } = new URL(req.url);
-  const id = searchParams.get("id");
   const projectId = searchParams.get("projectId");
+  const taskId = searchParams.get("taskId");
 
-  if (!id || !projectId) return NextResponse.json({ error: "Missing id/projectId" }, { status: 400 });
-
-  try {
-    await deleteDoc(doc(db, "projects", projectId, "tasks", id));
-    return NextResponse.json({ message: "Task deleted" });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Failed to delete task" }, { status: 500 });
+  if (!projectId || !taskId) {
+    return NextResponse.json({ error: "Missing projectId or taskId" }, { status: 400 });
   }
+
+  await adminDB
+    .collection("projects")
+    .doc(projectId)
+    .collection("tasks")
+    .doc(taskId)
+    .delete();
+
+  return NextResponse.json({ message: "Task deleted successfully" });
 }

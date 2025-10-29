@@ -1,56 +1,58 @@
-import { NextResponse } from "next/server";
-import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
-import { auth } from "@/lib/firebase";
-import { db } from "@/lib/firebase";
-import { getAuth } from "firebase-admin/auth"; // optional for verification
-import { getApps, initializeApp, applicationDefault } from "firebase-admin/app";
+import { NextRequest, NextResponse } from "next/server";
+import { adminAuth, adminDB } from "@/lib/firebaseAdmin";
 
-// Initialize Firebase Admin (server-side only)
-if (!getApps().length) {
-  initializeApp({
-    credential: applicationDefault(),
-  });
-}
-
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authHeader)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const token = authHeader.split("Bearer ")[1];
-    const decoded = await getAuth().verifyIdToken(token);
+    const token = authHeader.split(" ")[1];
+    const decoded = await adminAuth.verifyIdToken(token);
 
-    const q = query(collection(db, "projects"), where("ownerId", "==", decoded.uid));
-    const snapshot = await getDocs(q);
+    const snapshot = await adminDB
+      .collection("projects")
+      .where("userId", "==", decoded.uid)
+      .get();
 
-    const projects = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-    return NextResponse.json({ projects });
+    const projects = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    }));
+
+    return NextResponse.json(projects);
   } catch (err) {
-    console.error("Error fetching projects:", err);
-    return NextResponse.json({ error: "Failed to fetch projects" }, { status: 500 });
+    console.error("GET /api/projects error:", err);
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const authHeader = req.headers.get("authorization");
-    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!authHeader)
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const token = authHeader.split("Bearer ")[1];
-    const decoded = await getAuth().verifyIdToken(token);
+    const token = authHeader.split(" ")[1];
+    const decoded = await adminAuth.verifyIdToken(token);
+    const body = await req.json();
 
-    const { name, description } = await req.json();
+    if (!body.name || !body.description) {
+      return NextResponse.json({ error: "Missing fields" }, { status: 400 });
+    }
 
-    const newDoc = await addDoc(collection(db, "projects"), {
-      ownerId: decoded.uid,
-      name,
-      description,
+    const newProjectRef = await adminDB.collection("projects").add({
+      userId: decoded.uid,
+      name: body.name,
+      description: body.description,
       createdAt: new Date(),
     });
 
-    return NextResponse.json({ id: newDoc.id, name, description });
+    const newProject = await newProjectRef.get();
+
+    return NextResponse.json({ id: newProject.id, ...newProject.data() });
   } catch (err) {
-    console.error("Error creating project:", err);
-    return NextResponse.json({ error: "Failed to create project" }, { status: 500 });
+    console.error("POST /api/projects error:", err);
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 }
